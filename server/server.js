@@ -141,6 +141,12 @@ app.post('/signup', function (req, res, next) {
   });
 });
 
+app.get('/verified', function (req, res, next){
+  console.log('> verified req', req);
+  req.flash('success', "You're email is confirmed. You can now log in!")
+  res.render('pages/verified');
+});
+
 app.get('/login', function (req, res, next){
   res.render('pages/login', {
     user: req.user,

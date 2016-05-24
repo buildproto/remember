@@ -2,6 +2,13 @@
   "name": "user",
   "plural": "users",
   "base": "User",
+  "options": {
+    "postgresql": {
+      "table": "users"
+    },
+    "caseSensitiveEmail": false,
+    "emailVerificationRequired": true
+  },
   "relations": {
     "accessTokens": {
       "type": "hasMany",
