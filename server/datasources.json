@@ -1,6 +1,14 @@
 {
   "db": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "remember-dev",
     "name": "db",
-    "connector": "memory"
+    "connector": "postgresql"
+  },
+  "sendgrid": {
+    "name": "sendgrid",
+    "connector": "loopback-connector-sendgrid",
+    "api_key": "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"
   }
 }
