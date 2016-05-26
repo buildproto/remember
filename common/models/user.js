@@ -79,6 +79,23 @@ module.exports = function(userModel) {
     });
   }
 
+  function getSomeInstagramPhotos(token, cb) {
+    var options = {
+      access_token: token,
+      client_id: 'f1e69a25ff1b4a53bae115134f260960',
+      client_secret: '6e3bf9def997444fada84b98f0a61279'
+    };
+    ig.use(options);
+    ig.user_self_media_recent(function(err, medias, pagination, remaining, limit) {
+      console.log("err", err);
+      console.log("medias", medias);
+      console.log("pagination", pagination);
+      console.log("remaining", remaining);
+      console.log("limit", limit);
+      cb(medias);
+    });
+  }
+
   userModel.prototype.instagramPhotos = function(cb) {
     var self = this;
     console.log("instagramPhotos: user", this);
@@ -87,7 +104,9 @@ module.exports = function(userModel) {
     findInstagramProfile(self, function(profile) {
       if (profile) {
         console.log("found profile", profile);
-        cb(null, profile.credentials.token);        
+        getSomeInstagramPhotos(profile.credentials.token, function(result) {
+          cb(null, result);
+        });
       }
       else {
         cb(null, "no instagram profile found");
