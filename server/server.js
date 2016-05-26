@@ -62,6 +62,8 @@ app.middleware('auth', loopback.token({
   currentUserLiteral: 'me'
 }));
 
+app.use(loopback.token());
+
 app.middleware('session:before', loopback.cookieParser(app.get('cookieSecret')));
 app.middleware('session', loopback.session({
   secret: 'kitty',
