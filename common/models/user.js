@@ -1,10 +1,11 @@
 var config = require('../../server/config.json');
 var path = require('path');
+var ig = require('instagram-node').instagram();
  
-module.exports = function(user) {
+module.exports = function(userModel) {
 
   //send verification email after registration
-  user.observe('after save', function(context, next) {
+  userModel.observe('after save', function(context, next) {
     if (context.isNewInstance) {
       console.log("models#user#observe#after save INSERTED");
 
@@ -39,12 +40,12 @@ module.exports = function(user) {
   });
 
   //send password reset link when requested
-  user.on('resetPasswordRequest', function(info) {
+  userModel.on('resetPasswordRequest', function(info) {
     var url = 'http://' + config.host + ':' + config.port + '/reset-password';
     var html = 'Click <a href="' + url + '?access_token=' +
         info.accessToken.id + '">here</a> to reset your password';
 
-    user.app.models.Email.send({
+    userModel.app.models.Email.send({
       to: info.email,
       from: info.email,
       subject: 'Password reset',
@@ -56,16 +57,20 @@ module.exports = function(user) {
   });
 
   // remote method
-  user.instagramPhotos = function(userId, cb) {
-    var photos = "this is a test";
-    cb(null, photos)
+  userModel.prototype.instagramPhotos = function(cb) {
+    console.log("instagramPhotos: user", this);
+    var userId = this.id;
+    cb(null, "this is a test");
   };
-  user.remoteMethod(
+
+  userModel.remoteMethod(
     'instagramPhotos',
     {
-      accepts: [{arg: 'userId', type: 'string'}],
-      returns: {arg: 'photos', type: 'string'},
-      http: {path:'/instagram-photos', verb: 'post'}
+      isStatic: false,
+      description: "Get some Instagram photos for this user",
+      http: {path:'/instagram-photos', verb: 'get'},
+      accepts: [],
+      returns: {arg: 'photos', type: 'string'}
     }
   );
 

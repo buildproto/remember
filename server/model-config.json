@@ -11,6 +11,7 @@
     "public": true,
     "acls": [
       {
+       "accessType": "READ",
        "principalType": "ROLE",
        "principalId": "$everyone",
        "permission": "ALLOW",
