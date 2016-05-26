@@ -57,10 +57,42 @@ module.exports = function(userModel) {
   });
 
   // remote method
+  function findInstagramProfile(user, cb) {
+    // The below modeled after passport-configurator.js
+    user.identities(function(err, identities) {
+      for (ident in identities) {
+        var profile = identities[ident];
+        if (profile.provider === 'instagram') {
+          return cb(profile);
+        }
+      }
+
+      // No identities found, check credentials
+      user.credentials(function(err, accounts) {
+        for (account in accounts) {
+          var profile = accounts[account];
+          if (profile.provider === 'instagram') {
+            return cb(profile);
+          }
+        }
+      });        
+    });
+  }
+
   userModel.prototype.instagramPhotos = function(cb) {
+    var self = this;
     console.log("instagramPhotos: user", this);
-    var userId = this.id;
-    cb(null, "this is a test");
+    var userId = self.id;
+
+    findInstagramProfile(self, function(profile) {
+      if (profile) {
+        console.log("found profile", profile);
+        cb(null, profile.credentials.token);        
+      }
+      else {
+        cb(null, "no instagram profile found");
+      }
+    });
   };
 
   userModel.remoteMethod(
