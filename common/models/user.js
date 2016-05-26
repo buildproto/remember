@@ -54,4 +54,19 @@ module.exports = function(user) {
       console.log('> sending password reset email to:', info.email);
     });
   });
+
+  // remote method
+  user.instagramPhotos = function(userId, cb) {
+    var photos = "this is a test";
+    cb(null, photos)
+  };
+  user.remoteMethod(
+    'instagramPhotos',
+    {
+      accepts: [{arg: 'userId', type: 'string'}],
+      returns: {arg: 'photos', type: 'string'},
+      http: {path:'/instagram-photos', verb: 'post'}
+    }
+  );
+
 };

@@ -159,6 +159,7 @@ app.get('/auth/logout', function (req, res, next) {
   res.redirect('/');
 });
 
+
 app.start = function() {
   // start the web server
   return app.listen(function() {
