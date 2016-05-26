@@ -1,0 +1,22 @@
+extends ../layouts/layout
+
+block content
+
+  .jumbotron.text-center
+    h1 Do you remember this?
+
+    #image-container
+
+    p
+    button#another.btn.btn-lg.btn-primary Show me a new one
+
+  script(src="/js/load_photos.js")
+  script.
+    $(document).ready(function() {
+      renderOnePhoto($('#image-container'));
+
+      $('button#another').click(function() {
+        renderOnePhoto($('#image-container'))
+      });
+    });
+

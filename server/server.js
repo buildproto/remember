@@ -88,10 +88,19 @@ for (var s in config) {
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 
 app.get('/', function (req, res, next) {
-  res.render('pages/index', {user:
-    req.user,
-    url: req.url
-  });
+  if (req.user) {
+    res.render('pages/landing', {
+      user: req.user,
+      url: req.url
+    });    
+  }
+  else
+  {
+    res.render('pages/index', {user:
+      req.user,
+      url: req.url
+    });
+  }
 });
 
 app.get('/auth/account', ensureLoggedIn('/login'), function (req, res, next) {

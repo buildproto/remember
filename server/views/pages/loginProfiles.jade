@@ -28,4 +28,8 @@ block content
   #images-container
 
   script(src="/js/load_photos.js")
+  script.
+    $(document).ready(function() {
+      renderAllPhotos($('#images-container'));
+    });
 
