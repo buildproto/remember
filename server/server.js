@@ -62,8 +62,6 @@ app.middleware('auth', loopback.token({
   currentUserLiteral: 'me'
 }));
 
-app.use(loopback.token());
-
 app.middleware('session:before', loopback.cookieParser(app.get('cookieSecret')));
 app.middleware('session', loopback.session({
   secret: 'kitty',
@@ -72,11 +70,24 @@ app.middleware('session', loopback.session({
 }));
 passportConfigurator.init();
 
+// REF: http://blog.digitopia.com/tokens-sessions-users/
+// use loopback.token middleware on all routes
+// setup gear for authentication using cookie (access_token)
+// Note: requires cookie-parser (defined in middleware.json)
+app.use(loopback.token({  
+  model: app.models.accessToken,
+  currentUserLiteral: 'me',
+  searchDefaultTokenKeys: false,
+  cookies: ['access_token'],
+  headers: ['access_token', 'X-Access-Token'],
+  params: ['access_token']
+}));
+
 // We need flash messages to see passport errors
 app.use(flash());
 
 passportConfigurator.setupModels({
-  userModel: app.models.user,
+  userModel: app.models.person,
   userIdentityModel: app.models.userIdentity,
   userCredentialModel: app.models.userCredential
 });
@@ -126,14 +137,14 @@ app.get('/signup', function (req, res, next){
 
 app.post('/signup', function (req, res, next) {
 
-  var User = app.models.user;
+  var Person = app.models.person;
 
-  var newUser = {};
-  newUser.email = req.body.email.toLowerCase();
-  newUser.username = req.body.username.trim();
-  newUser.password = req.body.password;
+  var newPerson = {};
+  newPerson.email = req.body.email.toLowerCase();
+  newPerson.username = req.body.username.trim();
+  newPerson.password = req.body.password;
 
-  User.create(newUser, function (err, user) {
+  Person.create(newPerson, function (err, person) {
     if (err) {
       req.flash('error', err.message);
       return res.redirect('back');
@@ -142,7 +153,7 @@ app.post('/signup', function (req, res, next) {
       // that can be used to establish a login session. This function is
       // primarily used when users sign up, during which req.login() can
       // be invoked to log in the newly registered user.
-      req.login(user, function (err) {
+      req.login(person, function (err) {
         if (err) {
           req.flash('error', err.message);
           return res.redirect('back');

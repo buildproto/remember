@@ -1,10 +1,10 @@
 {
-  "name": "user",
-  "plural": "users",
+  "name": "person",
+  "plural": "people",
   "base": "User",
   "options": {
     "postgresql": {
-      "table": "users"
+      "table": "people"
     },
     "caseSensitiveEmail": false,
     "emailVerificationRequired": true
