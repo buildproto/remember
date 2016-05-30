@@ -56,15 +56,6 @@ module.exports = function(personModel) {
     });
   });
 
-
-  // ANOTHER TEST
-  personModel.afterRemote('create', function(ctx, result, next) {
-    console.log("afterRemote#create");
-    next();
-  });
-  // END ANOTHER TEST
-
-
   // remote method
   function findInstagramProfile(person, cb) {
     // The below modeled after passport-configurator.js
