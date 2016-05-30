@@ -98,13 +98,6 @@ app.use(function setCurrentUser(req, res, next) {
 });
 
 
-
-// The access token is only available after boot
-app.middleware('auth', loopback.token({
-  model: app.models.accessToken,
-  currentUserLiteral: 'me'
-}));
-
 app.middleware('session:before', loopback.cookieParser(app.get('cookieSecret')));
 app.middleware('session', loopback.session({
   secret: 'kitty',
