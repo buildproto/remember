@@ -15,7 +15,7 @@ function getUrlVars()
 
 function loadInstagramPhotos(cb) {
   $.ajax({
-    'url': '/api/users/me/instagram-photos',
+    'url': '/api/people/me/instagram-photos',
     'type': 'GET',
     'data': {
       //fill in access token

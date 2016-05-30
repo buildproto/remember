@@ -56,59 +56,6 @@ module.exports = function(personModel) {
     });
   });
 
-  // User helpers pulled from freecodecamp
-  personModel.afterRemote('login', function(ctx, accessToken, next) {
-    var res = ctx.res;
-    var req = ctx.req;
-    // var args = ctx.args;
-
-    var config = {
-      signed: !!req.signedCookies,
-      maxAge: accessToken.ttl
-    };
-
-    if (accessToken && accessToken.id) {
-      debug('setting cookies');
-      res.cookie('access_token', accessToken.id, config);
-      res.cookie('userId', accessToken.userId, config);
-    }
-
-    return req.logIn({ id: accessToken.userId.toString() }, function(err) {
-      if (err) { return next(err); }
-
-      debug('user logged in');
-
-      if (req.session && req.session.returnTo) {
-        var redirectTo = req.session.returnTo;
-        if (redirectTo === '/map-aside') {
-          redirectTo = '/map';
-        }
-        return res.redirect(redirectTo);
-      }
-
-      req.flash('success', { msg: 'Success! You are logged in.' });
-      return res.redirect('/');
-    });
-  });
-
-  personModel.afterRemoteError('login', function(ctx) {
-    var res = ctx.res;
-    var req = ctx.req;
-
-    req.flash('errors', {
-      msg: 'Invalid username or password.'
-    });
-    return res.redirect('/email-signin');
-  });
-
-  personModel.afterRemote('logout', function(ctx, result, next) {
-    var res = ctx.res;
-    res.clearCookie('access_token');
-    res.clearCookie('userId');
-    next();
-  });
-  // End stuff pulled from FreeCodeCamp
-
 
   // ANOTHER TEST
   personModel.afterRemote('create', function(ctx, result, next) {

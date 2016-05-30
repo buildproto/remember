@@ -56,6 +56,49 @@ app.middleware('parse', bodyParser.urlencoded({
   extended: true
 }));
 
+
+
+// Establish current user from access token
+app.use(loopback.context());
+app.use(function setCurrentUser(req, res, next) {
+    if (!req.accessToken) {
+        return next();
+    }
+    app.models.Person.findById(req.accessToken.userId, function(err, user) {
+        if (err) {
+            return next(err);
+        }
+        if (!user) {
+            return next(new Error('No user with this access token was found.'));
+        }
+
+        // NOTE: This section is pulled from passport-configurator.js
+        // sorry.
+        user.identities(function(err, identities) {
+          user.profiles = identities;
+          user.credentials(function(err, accounts) {
+            user.accounts = accounts;
+
+            // Set this user on the current context
+            var loopbackContext = loopback.getCurrentContext();
+            if (loopbackContext) {
+                req.accessToken.currentUser = user;
+                loopbackContext.set('currentUser', user);
+            }
+            req.user = user;
+            // ^ didn't see examples doing this, but couldn't find a better way
+
+            next();
+
+          });
+        });
+
+
+    });
+});
+
+
+
 // The access token is only available after boot
 app.middleware('auth', loopback.token({
   model: app.models.accessToken,
@@ -68,7 +111,6 @@ app.middleware('session', loopback.session({
   saveUninitialized: true,
   resave: true
 }));
-passportConfigurator.init();
 
 // REF: http://blog.digitopia.com/tokens-sessions-users/
 // use loopback.token middleware on all routes
@@ -86,6 +128,8 @@ app.use(loopback.token({
 // We need flash messages to see passport errors
 app.use(flash());
 
+passportConfigurator.init();
+
 passportConfigurator.setupModels({
   userModel: app.models.person,
   userIdentityModel: app.models.userIdentity,
@@ -96,7 +140,9 @@ for (var s in config) {
   c.session = c.session !== false;
   passportConfigurator.configureProvider(s, c);
 }
-var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+
+var ensureLoggedIn = require('./middleware/ensure-logged-in');
+// ^ This is our custom loopback ensure-logged-in.
 
 app.get('/', function (req, res, next) {
   if (req.user) {
