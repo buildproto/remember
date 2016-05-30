@@ -2,27 +2,27 @@ var config = require('../../server/config.json');
 var path = require('path');
 var ig = require('instagram-node').instagram();
  
-module.exports = function(userModel) {
+module.exports = function(personModel) {
 
   //send verification email after registration
-  userModel.observe('after save', function(context, next) {
+  personModel.observe('after save', function(context, next) {
     if (context.isNewInstance) {
-      console.log("models#user#observe#after save INSERTED");
+      console.log("models#person#observe#after save INSERTED");
 
-      var user = context.instance;
-      var userModel = user.constructor;
-      if (userModel.settings.emailVerificationRequired) {
+      var person = context.instance;
+      var personModel = person.constructor;
+      if (personModel.settings.emailVerificationRequired) {
         var options = {
           type: 'email',
-          to: user.email,
+          to: person.email,
           from: 'click@buildproto.com',
           subject: 'Thanks for registering for Remember.',
           template: path.resolve(__dirname, '../../server/views/mailer/verify.ejs'),
           redirect: '/verified',
-          user: user
+          user: person
         };
 
-        user.verify(options, function(err, response) {
+        person.verify(options, function(err, response) {
           if (err) return next(err);
           console.log('> verification email sent:', response);
           // no redirect/render here because we're in an 'after save' operation as opposed to
@@ -33,19 +33,19 @@ module.exports = function(userModel) {
         console.log("Email verification not required. Not sending email.");
       }
     } else {
-      console.log("models#user#observe#after save UPDATED");
+      console.log("models#person#observe#after save UPDATED");
     }
 
     next();
   });
 
   //send password reset link when requested
-  userModel.on('resetPasswordRequest', function(info) {
+  personModel.on('resetPasswordRequest', function(info) {
     var url = 'http://' + config.host + ':' + config.port + '/reset-password';
     var html = 'Click <a href="' + url + '?access_token=' +
         info.accessToken.id + '">here</a> to reset your password';
 
-    userModel.app.models.Email.send({
+    personModel.app.models.Email.send({
       to: info.email,
       from: info.email,
       subject: 'Password reset',
@@ -56,10 +56,19 @@ module.exports = function(userModel) {
     });
   });
 
+
+  // ANOTHER TEST
+  personModel.afterRemote('create', function(ctx, result, next) {
+    console.log("afterRemote#create");
+    next();
+  });
+  // END ANOTHER TEST
+
+
   // remote method
-  function findInstagramProfile(user, cb) {
+  function findInstagramProfile(person, cb) {
     // The below modeled after passport-configurator.js
-    user.identities(function(err, identities) {
+    person.identities(function(err, identities) {
       for (ident in identities) {
         var profile = identities[ident];
         if (profile.provider === 'instagram') {
@@ -68,7 +77,7 @@ module.exports = function(userModel) {
       }
 
       // No identities found, check credentials
-      user.credentials(function(err, accounts) {
+      person.credentials(function(err, accounts) {
         for (account in accounts) {
           var profile = accounts[account];
           if (profile.provider === 'instagram') {
@@ -84,19 +93,39 @@ module.exports = function(userModel) {
       access_token: token,
       client_id: 'f1e69a25ff1b4a53bae115134f260960',
       client_secret: '6e3bf9def997444fada84b98f0a61279'
+      // ^ "Remember" sandboxed keys
+      //client_id: process.env.INSTAGRAM_CLIENT_ID,
+      //client_secret: process.env.INSTAGRAM_CLIENT_SECRET
+      // ^ Pictli key
     };
+    console.log("options", options);
     ig.use(options);
-    ig.user_self_media_recent(function(err, medias, pagination, remaining, limit) {
+
+    var result = [];
+    var hdl = function(err, medias, pagination, remaining, limit) {
+      // Your implementation here 
       console.log("err", err);
-      console.log("medias", medias);
+      console.log("medias length", medias.length);
       console.log("pagination", pagination);
       console.log("remaining", remaining);
       console.log("limit", limit);
-      cb(medias);
-    });
+      result = result.concat(medias);
+
+      if(pagination.next) {
+        pagination.next(hdl); // Will get second page results 
+      }
+      else {
+        cb(result);
+      }
+    };
+
+    var mediaOptions = {
+      count: 50
+    }
+    ig.user_media_recent('11752850', mediaOptions, hdl);
   }
 
-  userModel.prototype.instagramPhotos = function(cb) {
+  personModel.prototype.instagramPhotos = function(cb) {
     var self = this;
     console.log("instagramPhotos: user", this);
     var userId = self.id;
@@ -114,7 +143,7 @@ module.exports = function(userModel) {
     });
   };
 
-  userModel.remoteMethod(
+  personModel.remoteMethod(
     'instagramPhotos',
     {
       isStatic: false,

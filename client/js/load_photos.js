@@ -15,12 +15,9 @@ function getUrlVars()
 
 function loadInstagramPhotos(cb) {
   $.ajax({
-    'url': '/api/users/me/instagram-photos',
+    'url': '/api/people/me/instagram-photos',
     'type': 'GET',
-    'data': {
-      //fill in access token
-      access_token: 'wMw5yXS7W7WGuhKJPhp9vtVFfBxLEVWci7XBcLiVhDs4h4vbb2bXjoZOrPLiCZk8'
-    },
+    'data': {},
     'success': function(data) {
       cb(data);
     }

@@ -56,13 +56,47 @@ app.middleware('parse', bodyParser.urlencoded({
   extended: true
 }));
 
-// The access token is only available after boot
-app.middleware('auth', loopback.token({
-  model: app.models.accessToken,
-  currentUserLiteral: 'me'
-}));
 
-app.use(loopback.token());
+
+// Establish current user from access token
+app.use(loopback.context());
+app.use(function setCurrentUser(req, res, next) {
+    if (!req.accessToken) {
+        return next();
+    }
+    app.models.Person.findById(req.accessToken.userId, function(err, user) {
+        if (err) {
+            return next(err);
+        }
+        if (!user) {
+            return next(new Error('No user with this access token was found.'));
+        }
+
+        // NOTE: This section is pulled from passport-configurator.js
+        // sorry.
+        user.identities(function(err, identities) {
+          user.profiles = identities;
+          user.credentials(function(err, accounts) {
+            user.accounts = accounts;
+
+            // Set this user on the current context
+            var loopbackContext = loopback.getCurrentContext();
+            if (loopbackContext) {
+                req.accessToken.currentUser = user;
+                loopbackContext.set('currentUser', user);
+            }
+            req.user = user;
+            // ^ didn't see examples doing this, but couldn't find a better way
+
+            next();
+
+          });
+        });
+
+
+    });
+});
+
 
 app.middleware('session:before', loopback.cookieParser(app.get('cookieSecret')));
 app.middleware('session', loopback.session({
@@ -70,13 +104,27 @@ app.middleware('session', loopback.session({
   saveUninitialized: true,
   resave: true
 }));
-passportConfigurator.init();
+
+// REF: http://blog.digitopia.com/tokens-sessions-users/
+// use loopback.token middleware on all routes
+// setup gear for authentication using cookie (access_token)
+// Note: requires cookie-parser (defined in middleware.json)
+app.use(loopback.token({  
+  model: app.models.accessToken,
+  currentUserLiteral: 'me',
+  searchDefaultTokenKeys: false,
+  cookies: ['access_token'],
+  headers: ['access_token', 'X-Access-Token'],
+  params: ['access_token']
+}));
 
 // We need flash messages to see passport errors
 app.use(flash());
 
+passportConfigurator.init();
+
 passportConfigurator.setupModels({
-  userModel: app.models.user,
+  userModel: app.models.person,
   userIdentityModel: app.models.userIdentity,
   userCredentialModel: app.models.userCredential
 });
@@ -85,7 +133,9 @@ for (var s in config) {
   c.session = c.session !== false;
   passportConfigurator.configureProvider(s, c);
 }
-var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+
+var ensureLoggedIn = require('./middleware/ensure-logged-in');
+// ^ This is our custom loopback ensure-logged-in.
 
 app.get('/', function (req, res, next) {
   if (req.user) {
@@ -126,14 +176,14 @@ app.get('/signup', function (req, res, next){
 
 app.post('/signup', function (req, res, next) {
 
-  var User = app.models.user;
+  var Person = app.models.person;
 
-  var newUser = {};
-  newUser.email = req.body.email.toLowerCase();
-  newUser.username = req.body.username.trim();
-  newUser.password = req.body.password;
+  var newPerson = {};
+  newPerson.email = req.body.email.toLowerCase();
+  newPerson.username = req.body.username.trim();
+  newPerson.password = req.body.password;
 
-  User.create(newUser, function (err, user) {
+  Person.create(newPerson, function (err, person) {
     if (err) {
       req.flash('error', err.message);
       return res.redirect('back');
@@ -142,7 +192,7 @@ app.post('/signup', function (req, res, next) {
       // that can be used to establish a login session. This function is
       // primarily used when users sign up, during which req.login() can
       // be invoked to log in the newly registered user.
-      req.login(user, function (err) {
+      req.login(person, function (err) {
         if (err) {
           req.flash('error', err.message);
           return res.redirect('back');
@@ -167,8 +217,14 @@ app.get('/login', function (req, res, next){
 });
 
 app.get('/auth/logout', function (req, res, next) {
-  req.logout();
-  res.redirect('/');
+    if (!req.accessToken) return res.sendStatus(401); //return 401:unauthorized if accessToken is not present
+    app.models.person.logout(req.accessToken.id, function(err) {
+      if (err) return next(err);
+      // Clear the session cookies
+      res.clearCookie('access_token');
+      res.clearCookie('userId');
+      res.redirect('/'); //on successful logout, redirect
+    });
 });
 
 
