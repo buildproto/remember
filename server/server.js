@@ -178,8 +178,14 @@ app.get('/login', function (req, res, next){
 });
 
 app.get('/auth/logout', function (req, res, next) {
-  req.logout();
-  res.redirect('/');
+    if (!req.accessToken) return res.sendStatus(401); //return 401:unauthorized if accessToken is not present
+    app.models.person.logout(req.accessToken.id, function(err) {
+      if (err) return next(err);
+      // Clear the session cookies
+      res.clearCookie('access_token');
+      res.clearCookie('userId');
+      res.redirect('/'); //on successful logout, redirect
+    });
 });
 
 
