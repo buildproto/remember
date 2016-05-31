@@ -113,7 +113,7 @@ module.exports = function(personModel) {
     var mediaOptions = {
       count: 50
     }
-    ig.user_media_recent('11752850', mediaOptions, hdl);
+    ig.user_self_media_recent(mediaOptions, hdl);
   }
 
   personModel.prototype.instagramPhotos = function(cb) {
